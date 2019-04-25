@@ -30,7 +30,8 @@
 #define TT_HLEN 4   /* tt header length */
 #define TT_TABLE_SIZE_MIN 16	/* minimum size of tt_table */
 #define TT_BUFFER_SIZE 4096 /* one flow one buffer */
-#define MAX_JITTER 100000
+#define MAX_JITTER 10000000
+#define SEND_ADVANCE_TIME 2000000
 #define NSEC_PER_SECOND 1000000000
 #define NSEC_PER_MSECOND 1000000
 #define NSEC_PER_USECOND 1000

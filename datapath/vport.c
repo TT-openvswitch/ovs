@@ -41,6 +41,7 @@
 #include "gso.h"
 #include "vport.h"
 #include "vport-internal_dev.h"
+#include "tt.h"
 
 static LIST_HEAD(vport_ops_list);
 
@@ -282,6 +283,7 @@ static enum hrtimer_restart hrtimer_handler(struct hrtimer *timer)
 	struct vport *vport = NULL;
 	struct tt_send_info *send_info = NULL;
 	struct tt_schedule_info *schedule_info = NULL;
+    struct timespec arrive_stamp;
 
 	schedule_info = container_of(timer, struct tt_schedule_info, timer);
 	vport = schedule_info->vport;
@@ -316,13 +318,17 @@ static enum hrtimer_restart hrtimer_handler(struct hrtimer *timer)
 		}
 	
 		if (skb) {
-			pr_info("FINISH: vport id %d send flow id %d \n", vport->port_no, flow_id);
-			out_skb = skb_clone(skb, GFP_ATOMIC);
-			ovs_vport_send(vport, out_skb);
-			kfree(skb);
+			//pr_info("FINISH: vport id %d send flow id %d \n", vport->port_no, flow_id);
+			skb_get_timestampns(skb, &arrive_stamp);
+			if (TIMESPEC_TO_NSEC(current_time) - TIMESPEC_TO_NSEC(arrive_stamp) <= 
+				send_info->macro_period) {
+				out_skb = skb_clone(skb, GFP_ATOMIC);
+				ovs_vport_send(vport, out_skb);
+				kfree(skb);
+			}
 		}
 		else {
-			pr_info("MISS: vport id %d can't send flow id %u\n", vport->port_no, flow_id);
+			//pr_info("MISS: vport id %d can't send flow id %u\n", vport->port_no, flow_id);
 		}
 	}
 
@@ -943,7 +949,7 @@ int ovs_vport_start_tt_schedule(struct vport* vport)
 		pr_info("ERROR: dispatch send info fail!");
 		return -EINVAL;
 	}
-	vport->tt_schedule_info->send_info->advance_time = 2000000; //===>just for test
+	vport->tt_schedule_info->send_info->advance_time = SEND_ADVANCE_TIME; //===>just for test
 	ovs_vport_hrtimer_start(vport);
 	return 0;
 }
